@@ -1,0 +1,311 @@
+---
+title: "MIS Effort Kids"
+author: "Kayley Dotson"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r, include = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(haven)
+library(afex)
+library(car)
+library(stats)
+library(plyr)
+library(dplyr)
+library(emmeans)
+library(ppcor)
+library(psych)
+library(tidyr)
+library(janitor)
+library(kableExtra)
+library(reshape2)
+library(vtable)
+library(summarytools)
+library(knitr)
+library(flextable)
+library(officer)
+library(binom)
+```
+
+```{r load data, include=FALSE}
+setwd('/Users/kayleydotson/')
+MIS_effort_kids <- read.csv("MIS_effort_kids.csv")
+```
+
+```{r}
+colnames(MIS_effort_kids)[12] ="effort"
+```
+
+For all conducted analyses, scores were standardized so that a positive value indicates a preference for effort, a negative value indicates a preference for value, and a 0 value indicates no preference. 
+
+```{r}
+MIS_effort_sum_table <- st(MIS_effort_kids,
+                     vars = c('recipient_like_giver', 'giver_you_like_more', 'friend', 'effort', 'recipient_like_gift', 'appreciate', 'gift_you_like_more', 'recipient_gift', 'you_gift'))
+```
+
+```{r}
+MIS_effort_kids_renamed <- MIS_effort_kids %>%
+  dplyr::select(
+    "Recipient liking of giver" = recipient_like_giver,
+    "Child liking of giver" = giver_you_like_more,
+    "Recipient better friend" = friend,
+    "Effort" = effort,
+    "Recipient liking of gift" = recipient_like_gift,
+    "Recipient appreciation" = appreciate,
+    "Child liking of gift" = gift_you_like_more,
+    "Recipient gift" = recipient_gift,
+    "Child gift" = you_gift
+  )
+
+summary_table <- describe(MIS_effort_kids_renamed)[c("mean", "sd")] %>%
+  round(2) %>%
+  as.data.frame()
+
+summary_table$Variable <- rownames(summary_table)
+summary_table <- summary_table[, c("Variable", "mean", "sd")]
+rownames(summary_table) <- NULL
+
+kable(summary_table, col.names = c("Variable", "M", "SD"), align = "lcc", booktabs = TRUE) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+```{r}
+apa_flextable <- flextable(summary_table) %>%
+  set_header_labels(Variable = "Variable", mean = "M", sd = "SD") %>%
+  align(align = "center", part = "all") %>%
+  autofit() %>%
+  theme_booktabs()
+
+doc <- read_docx() %>%
+  body_add_par("Table 1", style = "Normal") %>%
+  body_add_par("Descriptive statistics for main variables", style = "Normal") %>%
+  body_add_flextable(apa_flextable)
+
+##print(doc, target = "MIS_APA_Table.docx")
+```
+
+```{r}
+t.test(MIS_effort_kids$recipient_like_giver)
+```
+
+```{r}
+t.test(MIS_effort_kids$friend)
+```
+
+```{r}
+t.test(MIS_effort_kids$gift_you_like_more)
+```
+
+```{r}
+t.test(MIS_effort_kids$recipient_like_gift)
+```
+
+```{r}
+t.test(MIS_effort_kids$appreciate)
+```
+
+```{r}
+binom.test(sum(MIS_effort_kids$recipient_gift == 1), n = nrow(MIS_effort_kids), p = 0.5)
+```
+
+```{r}
+binom.test(sum(MIS_effort_kids$you_gift == 1), n = nrow(MIS_effort_kids), p = 0.5)
+```
+
+```{r}
+n_success <- sum(MIS_effort_kids$recipient_gift == 1)
+n_total <- nrow(MIS_effort_kids)
+prop_success <- n_success / n_total
+ci <- binom.confint(n_success, n_total, method = "wilson")
+
+ggplot() +
+  geom_col(aes(x = "Reciprocity", y = prop_success), fill = "#4682B4", width = 0.5) +
+  geom_errorbar(aes(x = "Reciprocity", ymin = ci$lower, ymax = ci$upper), width = 0.1) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "gray50") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 1)) +
+  labs(
+    x = NULL,
+    y = "Proportion Choosing High-Effort Giver",
+    title = "Reciprocity"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+```
+
+```{r}
+table(MIS_effort_kids$appreciate)
+```
+
+```{r}
+df <- data.frame(Gift_Preferred = c("Valuable Gift", "No Preference", "Effortful Gift"), 
+                 Count = c(6, 5, 15))
+
+df$Gift_Preferred <- factor(df$Gift_Preferred, 
+                            levels = c("Valuable Gift", "No Preference", "Effortful Gift"))
+
+ggplot(data = df, aes(x = Gift_Preferred, y = Count, fill = Gift_Preferred)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#D3D3D3", "#FFCB05", "#00274C")) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 24)) +
+  labs(title = "Objective Value vs. Effort in Kids",
+       x = "Preferred Gift") +
+  guides(fill = "none")
+```
+
+```{r}
+ggplot(MIS_effort_kids, aes(x = gender, y = appreciate, fill = gender)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Appreciation by Gender", x = "Gender", y = "Appreciation")
+```
+
+```{r}
+ggplot(MIS_effort_kids, aes(x = gender, y = friend, fill = gender)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Better friend by Gender", x = "Gender", y = "Liking")
+```
+
+```{r}
+ggplot(MIS_effort_kids, aes(x = as.factor(age), y = appreciate, fill = as.factor(age))) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Appreciation by Age", x = "Age", y = "Appreciation")
+```
+
+
+```{r}
+ggplot(MIS_effort_kids, aes(x = as.factor(age), y = friend, fill = as.factor(age))) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Who is a better friend? by Age", x = "Age", y = "Who is a better friend?")
+```
+
+```{r}
+stacked_data <- MIS_effort_kids %>%
+  group_by(age, recipient_gift) %>%
+  dplyr::summarize(count = n(), .groups = "drop")
+
+ggplot(stacked_data, aes(x = as.factor(age), y = count, fill = as.factor(recipient_gift))) +
+  geom_bar(stat = "identity", position = "fill") +
+  theme_bw() +
+  labs(title = "Reciprocity Distribution by Age",
+       x = "Age",
+       y = "Proportion")
+```
+
+```{r}
+stacked_data2 <- MIS_effort_kids %>%
+  group_by(gender, recipient_gift) %>%
+  dplyr::summarize(count = n(), .groups = "drop")
+
+ggplot(stacked_data2, aes(x = as.factor(gender), y = count, fill = as.factor(recipient_gift))) +
+  geom_bar(stat = "identity", position = "fill") +
+  theme_bw() +
+  labs(title = "Reciprocity Distribution by Gender",
+       x = "Gender",
+       y = "Proportion")
+```
+
+There do not appear to be any strong age or gender trends. 
+
+```{r}
+correlation_data2 <- MIS_effort_kids[, c("like_high", "like_low", "recipient_like_giver", "giver_you_like_more", "friend", "effort", "recipient_like_gift", "appreciate", "gift_you_like_more", "recipient_gift", "you_gift")]
+
+correlation_matrix2 <- cor(correlation_data2, use = "pairwise.complete.obs")
+
+rounded_correlation_matrix2 <- round(correlation_matrix2, 2)
+
+rounded_correlation_matrix2 %>%
+  kbl(caption = "Correlation Table") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+```
+
+```{r}
+correlation_melt2 <- melt(correlation_matrix2)
+
+ggplot(correlation_melt2, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Correlation Heatmap", fill = "Correlation")
+```
+
+```{r}
+scale_like2 <- MIS_effort_kids [, c("recipient_like_gift","gift_you_like_more")]
+alpha_like2 <- alpha(scale_like2)
+print(alpha_like2)
+```
+
+```{r comp2}
+MIS_effort_kids$gift_scale <- rowMeans(MIS_effort_kids[,c('recipient_like_gift','gift_you_like_more')])
+```
+
+```{r}
+t.test(MIS_effort_kids$gift_scale)
+```
+
+## Graph for SRCD 2025
+
+```{r}
+srcd_df <- data.frame(
+  Group = rep(c("Adults", "Children"), each = 3),
+  Gift_Preferred = rep(c("Valuable Gift", "No Preference", "Effortful Gift"), times = 2),
+  Proportion = c(0.09, 0.14, 0.77,   # Adults
+                 0.23, 0.19, 0.58)       # Children
+)
+
+srcd_df$Gift_Preferred <- factor(srcd_df$Gift_Preferred,
+                            levels = c("Valuable Gift", "No Preference", "Effortful Gift"))
+
+ggplot(srcd_df, aes(x = Gift_Preferred, y = Proportion, fill = Gift_Preferred)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~Group) +
+  scale_fill_manual(values = c("#00274C", "#D3D3D3", "#FFCB05")) +
+  theme_bw() +
+  labs(title = "Preferred Gift Type by Group",
+       x = "Preferred Gift",
+       y = "Proportion") +
+  guides(fill = "none")
+```
+
+```{r}
+ggplot(MIS_effort_kids, aes(x = as.factor(age), y = recipient_like_giver, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Recipient liking of giver by Age", x = "Age", y = "Recipient liking of giver") 
+```
+
+
+```{R}
+ggplot(MIS_effort_kids, aes(x = as.factor(age), y = recipient_like_gift, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Recipient liking of gift by Age", x = "Age", y = "Recipient liking of gift") 
+```
+
+```{R}
+ggplot(MIS_effort_kids, aes(x = as.factor(age), y = friend, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Who is a better friend? by Age", x = "Age", y = "Who is a better friend?") 
+```
+
+```{R}
+ggplot(MIS_effort_kids, aes(x = as.factor(age), y = appreciate, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Appreciation by Age", x = "Age", y = "Appreciation") 
+```
+
+
+
+

@@ -1,0 +1,513 @@
+---
+title: "MIS3_effort"
+author: "Kayley Dotson"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r, include = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(haven)
+library(afex)
+library(car)
+library(stats)
+library(plyr)
+library(dplyr)
+library(emmeans)
+library(ppcor)
+library(psych)
+library(tidyr)
+library(janitor)
+library(kableExtra)
+library(reshape2)
+library(binom)
+```
+
+```{r load data, include=FALSE}
+setwd('/Users/kayleydotson/')
+MIS3_effort_data <- read.csv("MIS3_effort_data.csv")
+
+MIS3_effort_data <- MIS3_effort_data %>%
+  mutate()
+```
+
+For all conducted analyses, scores were standardized so that a positive value indicates a preference for effort, a negative value indicates a preference for value, and a 0 value indicates no preference. 
+
+```{r}
+count(MIS3_effort_data$gender)
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    mean = mean(cont_age, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(appreciate, na.rm = TRUE),
+    mean = mean(appreciate, na.rm = TRUE),
+    min = min(appreciate, na.rm = TRUE),
+    max = max(appreciate, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(like_high_effort, na.rm = TRUE),
+    mean = mean(like_high_effort, na.rm = TRUE),
+    min = min(like_high_effort, na.rm = TRUE),
+    max = max(like_high_effort, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(like_low_effort, na.rm = TRUE),
+    mean = mean(like_low_effort, na.rm = TRUE),
+    min = min(like_low_effort, na.rm = TRUE),
+    max = max(like_low_effort, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(like_more, na.rm = TRUE),
+    mean = mean(like_more, na.rm = TRUE),
+    min = min(like_more, na.rm = TRUE),
+    max = max(like_more, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(friend, na.rm = TRUE),
+    mean = mean(friend, na.rm = TRUE),
+    min = min(friend, na.rm = TRUE),
+    max = max(friend, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(effort, na.rm = TRUE),
+    mean = mean(effort, na.rm = TRUE),
+    min = min(effort, na.rm = TRUE),
+    max = max(effort, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(like_gift, na.rm = TRUE),
+    mean = mean(like_gift, na.rm = TRUE),
+    min = min(like_gift, na.rm = TRUE),
+    max = max(like_gift, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_data %>%
+  summarise(
+    median = median(reciprocity, na.rm = TRUE),
+    mean = mean(reciprocity, na.rm = TRUE),
+    min = min(reciprocity, na.rm = TRUE),
+    max = max(reciprocity, na.rm = TRUE))
+```
+
+```{r}
+MIS3_effort_renamed <- MIS3_effort_data %>%
+  dplyr::select(
+    "Child liking of giver" = like_more,
+    "Child better friend" = friend,
+    "Effort" = effort,
+    "Child appreciation" = appreciate,
+    "Child liking of gift" = like_gift,
+    "Child gift" = reciprocity
+  )
+
+summary_table2 <- describe(MIS3_effort_renamed)[c("mean", "sd")] %>%
+  round(2) %>%
+  as.data.frame()
+
+summary_table2$Variable <- rownames(summary_table2)
+summary_table2 <- summary_table2[, c("Variable", "mean", "sd")]
+rownames(summary_table2) <- NULL
+
+kable(summary_table2, col.names = c("Variable", "M", "SD"), align = "lcc", booktabs = TRUE) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+```{r}
+##apa_flextable2 <- flextable(summary_table2) %>%
+  ##set_header_labels(Variable = "Variable", mean = "M", sd = "SD") %>%
+  ##align(align = "center", part = "all") %>%
+  ##autofit() %>%
+  ##theme_booktabs()
+
+##doc2 <- read_docx() %>%
+  ##body_add_par("Table 2", style = "Normal") %>%
+  ##body_add_par("Descriptive statistics for MIS3 Variables", style = "Normal") %>%
+  ##body_add_flextable(apa_flextable2)
+
+##print(doc2, target = "MIS3_APA_Table.docx")
+```
+
+```{r}
+t.test(MIS3_effort_data$like_more)
+```
+
+```{r}
+t.test(MIS3_effort_data$friend)
+```
+
+```{r}
+t.test(MIS3_effort_data$like_gift)
+```
+
+```{r}
+t.test(MIS3_effort_data$appreciate)
+```
+
+```{r}
+binom.test(sum(MIS3_effort_data$reciprocity == 1), n = nrow(MIS3_effort_data), p = 0.5)
+```
+
+```{r}
+n_success <- sum(MIS3_effort_data$reciprocity == 1)
+n_total <- nrow(MIS3_effort_data)
+prop_success <- n_success / n_total
+ci <- binom.confint(n_success, n_total, method = "wilson")
+
+ggplot() +
+  geom_col(aes(x = "Reciprocity", y = prop_success), fill = "#4682B4", width = 0.5) +
+  geom_errorbar(aes(x = "Reciprocity", ymin = ci$lower, ymax = ci$upper), width = 0.1) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "gray50") +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, 1)) +
+  labs(
+    x = NULL,
+    y = "Proportion Choosing High-Effort Giver",
+    title = "Reciprocity"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+```
+
+Overall, children preferred valuable gifts over effortful gifts. They also preferred givers who gave valuable gifts over effortful gifts. While children reason that effort matters over value in third party gift exchanges, the results flip when children themselves become the gift recipients. 
+
+```{r}
+table(MIS3_effort_data$appreciate)
+```
+
+```{r}
+df <- data.frame(Gift_Preferred = c("Valuable Gift", "No Preference", "Effortful Gift"), 
+                 Count = c(16, 13, 16))
+
+df$Gift_Preferred <- factor(df$Gift_Preferred, 
+                            levels = c("Valuable Gift", "No Preference", "Effortful Gift"))
+
+ggplot(data = df, aes(x = Gift_Preferred, y = Count, fill = Gift_Preferred)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#00274C", "#D3D3D3", "#FFCB05")) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 24)) +
+  labs(title = "Objective Value vs. Effort \nwhen Children are Recipients",
+       x = "Preferred Gift") +
+  guides(fill = "none")
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = gender, y = appreciate, fill = gender)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Appreciation by Gender", x = "Gender", y = "Appreciation")
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = gender, y = friend, fill = gender)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "better friend by Gender", x = "Gender", y = "Liking")
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = appreciate, fill = as.factor(age))) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("#004E89", "#B4B4B4", "#FFDA7A","#E07A5F" )) +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Appreciation by Age", x = "Age", y = "Appreciation") 
+```
+
+There appears to be an age trend of interest. We will conduct further analyses to investigate this relationship.
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = appreciate)) +
+  geom_boxplot(fill = "#E07A5F", alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(width = 0.15, alpha = 0.3, color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  theme_bw(base_size = 14) +
+  labs(
+    title = "Children’s Appreciation of Effortful Gifts by Age",
+    x = "Age (years)",
+    y = "Appreciation Rating"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r violin plots}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = appreciate, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Appreciation by Age", x = "Age", y = "Appreciation") 
+```
+
+
+```{r for srcd poster}
+## appreciate_medians <- MIS3_effort_data %>%
+##  group_by(age) %>%
+##  summarize(med = median(appreciate, na.rm = TRUE)) %>%
+##  mutate(age = as.factor(age))
+
+## ggplot(MIS3_effort_data, aes(x = as.factor(age), y = appreciate, fill = as.factor(age))) +
+##  geom_boxplot() + 
+##  scale_fill_manual(values = c("#FFDA7A", "#FFDA7A", "#FFDA7A","#FFDA7A" )) +
+
+## geom_segment(data = appreciate_medians,
+##               aes(x = as.numeric(age) - 0.5, 
+  ##                 xend = as.numeric(age) + 0.5, 
+    ##               y = med, yend = med),
+      ##         inherit.aes = FALSE,
+        ##       color = "black",
+          ##     size = 1) +
+  
+##  theme_bw() +
+##  labs(title = "Appreciation by Age", x = "Age", y = "Appreciation") 
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = like_more, fill = as.factor(age))) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Liking of givers by Age", x = "Age", y = "Liking of givers")
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = like_more, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Liking of giver by Age", x = "Age", y = "Liking of giver") 
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = friend, fill = as.factor(age))) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Who is a better friend? by Age", x = "Age", y = "Who is a better friend?")
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = friend, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Who is a better friend? by Age", x = "Age", y = "Who is a better friend?")
+```
+
+```{r}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = like_gift, fill = as.factor(age))) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Which gift do you like more? by Age", x = "Age", y = "Which gift do you like more?")
+```
+
+
+```{r violin plots liking gift}
+ggplot(MIS3_effort_data, aes(x = as.factor(age), y = like_gift, fill = as.factor(age))) +
+  geom_violin(trim = FALSE, fill = "#E07A5F") +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "white") +
+  theme_bw() +
+  labs(title = "Liking of gift by Age", x = "Age", y = "Liking of gift") 
+```
+
+```{r}
+MIS3_effort_data$age <- as.factor(MIS3_effort_data$age)
+```
+
+```{r}
+stacked_data <- MIS3_effort_data %>%
+  group_by(age, reciprocity) %>%
+  dplyr::summarize(count = n(), .groups = "drop")
+
+ggplot(stacked_data, aes(x = as.factor(age), y = count, fill = as.factor(reciprocity))) +
+  geom_bar(stat = "identity", position = "fill") +
+  theme_bw() +
+  labs(title = "Reciprocity Distribution by Age",
+       x = "Age",
+       y = "Proportion")
+```
+
+```{r}
+stacked_data2 <- MIS3_effort_data %>%
+  group_by(gender, reciprocity) %>%
+  dplyr::summarize(count = n(), .groups = "drop")
+
+ggplot(stacked_data2, aes(x = as.factor(gender), y = count, fill = as.factor(reciprocity))) +
+  geom_bar(stat = "identity", position = "fill") +
+  theme_bw() +
+  labs(title = "Reciprocity Distribution by Gender",
+       x = "Gender",
+       y = "Proportion")
+```
+
+
+## Testing normality of response variables
+
+```{r check normality like more}
+ggplot(MIS3_effort_data, aes(x = like_more)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve of Liking",
+       x = "Liking",
+       y = "Count")
+```
+
+Liking of givers is not normally distributed. It is multimodal. 
+
+```{r check normality friend}
+ggplot(MIS3_effort_data, aes(x = friend)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve of who is a better friend",
+       x = "Better friend",
+       y = "Count")
+```
+
+Better friend is not normally distributed. It is multimodal. 
+
+```{r check normality like gift}
+ggplot(MIS3_effort_data, aes(x = like_gift)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve of Liking Gift",
+       x = "Liking",
+       y = "Count")
+```
+
+Liking of gift is strongly right skewed. 
+
+```{r check normality appreciate}
+ggplot(MIS3_effort_data, aes(x = appreciate)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve of Appreciation",
+       x = "Appreciation",
+       y = "Count")
+```
+
+Appreciation is not normally distributed. It is multimodal. 
+
+Since appreciation is not normally distributed, we will conduct a non-parametric ordinal logistic regression. 
+
+## This model shows the relationship between each binned age group (significant when comparing 4 to 7 & approaching significance from 4 to 6) However, we are interested in the overall effect of age. We will run a second model to look at overall effect of age.  
+
+```{r}
+ordinal_model <- polr(as.factor(appreciate) ~ age, 
+                     data = MIS3_effort_data, 
+                     method = "logistic")
+
+summary(ordinal_model)
+
+coefs <- summary(ordinal_model)$coefficients
+p_values <- 2 * (1 - pnorm(abs(coefs[, "t value"])))
+p_values
+```
+
+Based on the coefficients, t-values, and p-values 6- & 7-year-olds are more likely to appreciate effortful gifts as shown by higher appreciation.
+
+
+```{r}
+MIS3_effort_data <- MIS3_effort_data %>%
+  mutate(age_num = as.numeric(age) + 3)
+```
+
+
+## This model shows the overall trend of age on appreciation. We find that there is a significant positive relationship between participant age and appreciation for an effortful gift as compared to a valuable gift (p = 0.009). 
+
+```{r}
+ordinal_model2 <- polr(as.factor(appreciate) ~ age_num, 
+                     data = MIS3_effort_data, 
+                     method = "logistic")
+
+summary(ordinal_model2)
+
+coefs2 <- summary(ordinal_model2)$coefficients
+p_values2 <- 2 * (1 - pnorm(abs(coefs2[, "t value"])))
+p_values2
+```
+
+
+```{r scatter}
+ggplot(MIS3_effort_data, aes(x = cont_age, y = appreciate)) +
+  geom_point() +
+  geom_smooth(method=lm) +
+  labs(title = "Age vs. Appreciation", x = "Continous Age", y = "Appreciation") +
+  theme_minimal()
+```
+
+```{r}
+ordinal_model3 <- polr(as.factor(appreciate) ~ cont_age, 
+                     data = MIS3_effort_data, 
+                     method = "logistic")
+
+summary(ordinal_model3)
+
+coefs3 <- summary(ordinal_model3)$coefficients
+p_values3 <- 2 * (1 - pnorm(abs(coefs3[, "t value"])))
+p_values3
+```
+
+```{r}
+MIS3_effort_data <- as.data.frame(MIS3_effort_data)
+```
+
+```{r}
+correlation_data <- MIS3_effort_data[, c("like_high_effort", "like_low_effort", "like_more", 
+                                         "friend", "effort", "like_gift", "appreciate", "reciprocity")]
+
+correlation_matrix <- cor(correlation_data, use = "pairwise.complete.obs")
+
+rounded_correlation_matrix <- round(correlation_matrix, 2)
+
+rounded_correlation_matrix %>%
+  kbl(caption = "Correlation Table") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+```
+
+```{r}
+correlation_melt <- melt(correlation_matrix)
+
+ggplot(correlation_melt, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Correlation Heatmap", fill = "Correlation")
+```
+
+
+```{r half sample t-test for power analysis}
+age_cutoff <- 7 
+
+MIS3_effort_6_7 <- MIS3_effort_data %>% filter(cont_age >= age_cutoff)
+
+t.test(MIS3_effort_6_7$appreciate, mu = 0)  
+```

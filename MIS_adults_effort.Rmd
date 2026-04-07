@@ -1,0 +1,216 @@
+---
+title: "MIS_Adults_Effort"
+author: "Kayley Dotson"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(haven)
+library(afex)
+library(car)
+library(stats)
+library(plyr)
+library(dplyr)
+library(emmeans)
+library(ppcor)
+library(psych)
+library(tidyr)
+library(janitor)
+library(kableExtra)
+library(reshape2)
+library(vtable)
+library(summarytools)
+library(knitr)
+library(flextable)
+library(officer)
+library(ggpubr)
+library(MASS)
+library(coin)
+```
+
+```{r load data, include=FALSE}
+setwd('/Users/kayleydotson/')
+MIS_effort_adults <- read.csv("mis_adults_effort_072025.csv")
+```
+
+```{r}
+dvs <- c("liking_of_high_thought_or_effort_giver", "liking_of_high_value_giver", "who_do_you_think_character_likes_more", "who_do_you_like_more", "better_friends", "which_gift_does_character_like_more", "which_gift_character_appreciates_more", "which_gift_you_like_more")
+```
+
+```{r normality1}
+ggplot(MIS_effort_adults, aes(x = liking_of_high_thought_or_effort_giver)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve of Liking",
+       x = "Liking",
+       y = "Count")
+```
+
+```{r normality 2}
+ggplot(MIS_effort_adults, aes(x = liking_of_high_value_giver)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve of Liking",
+       x = "Liking",
+       y = "Count")
+```
+
+```{r normality 3}
+ggplot(MIS_effort_adults, aes(x = who_do_you_think_character_likes_more)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve",
+       x = "Liking",
+       y = "Count")
+```
+
+```{r normality 4}
+ggplot(MIS_effort_adults, aes(x = who_do_you_like_more)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve",
+       x = "Liking",
+       y = "Count")
+```
+
+```{r normality 5}
+ggplot(MIS_effort_adults, aes(x = better_friends)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve",
+       x = "Liking",
+       y = "Count")
+```
+
+```{r normality 6}
+ggplot(MIS_effort_adults, aes(x = which_gift_does_character_like_more)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve",
+       x = "Liking",
+       y = "Count")
+```
+
+```{r normality 7}
+ggplot(MIS_effort_adults, aes(x = which_gift_character_appreciates_more)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve",
+       x = "Liking",
+       y = "Count")
+```
+
+
+```{r normality 8}
+ggplot(MIS_effort_adults, aes(x = which_gift_you_like_more)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "lightblue", color = "navy") +
+  geom_density(color = "black", size = 1) +
+  theme_minimal() +
+  labs(title = "Histogram with density curve",
+       x = "Liking",
+       y = "Count")
+```
+
+Normal: better_friends, who_do_you_like_more, who_do_you_think_character_likes_more, liking_of_high_value_giver
+Non-normal: which_gift_you_like_more, which_gift_character_appreciates_more, which_gift_does_character_like_more, liking_of_high_thought_or_effort_giver
+
+## Exploratory Analysis. Predictors "location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift"
+
+```{r}
+high_effort_giver_model <- glm(liking_of_high_thought_or_effort_giver ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(high_effort_giver_model)
+```
+
+```{r}
+high_value_giver_model <- glm(liking_of_high_value_giver ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(high_value_giver_model)
+```
+
+```{r}
+like_who_more_model <- glm(who_do_you_think_character_likes_more ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(like_who_more_model)
+```
+
+```{r}
+friends_model <- glm(better_friends ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(friends_model)
+```
+
+Age is interesting for friends model!
+
+```{r}
+who_you_like_model <- glm(who_do_you_like_more ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(who_you_like_model)
+```
+
+```{r}
+recipient_gift_model <- glm(which_gift_does_character_like_more ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(recipient_gift_model)
+```
+
+```{r}
+appreciate_model <- glm(which_gift_character_appreciates_more ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(appreciate_model)
+```
+
+```{r}
+gift_you_like_model <- glm(which_gift_you_like_more ~ location_of_high_effort_or_thought + age_at_test + gender + character_gender + gift, family = gaussian(), data = MIS_effort_adults)
+summary(gift_you_like_model)
+```
+
+N > 30, so we will proceed with t-tests.
+
+Normal: better_friends, who_do_you_like_more, who_do_you_think_character_likes_more, liking_of_high_value_giver
+Non-normal: which_gift_you_like_more, which_gift_character_appreciates_more, which_gift_does_character_like_more, liking_of_high_thought_or_effort_giver
+
+```{r}
+t.test(MIS_effort_adults$liking_of_high_thought_or_effort_giver)
+```
+
+```{r}
+t.test(MIS_effort_adults$liking_of_high_value_giver)
+```
+
+```{r}
+t.test(MIS_effort_adults$who_do_you_think_character_likes_more)
+```
+
+```{r}
+t.test(MIS_effort_adults$better_friends)
+```
+
+```{r}
+t.test(MIS_effort_adults$who_do_you_like_more)
+```
+
+```{r}
+t.test(MIS_effort_adults$which_gift_does_character_like_more)
+```
+
+```{r}
+t.test(MIS_effort_adults$which_gift_character_appreciates_more)
+```
+
+```{r}
+t.test(MIS_effort_adults$which_gift_you_like_more)
+```
+
+```{r}
+binom.test(sum(MIS_effort_adults$who_will_character_give_gift_to == 1), n = nrow(MIS_effort_adults), p = 0.5)
+```
+
+```{r}
+binom.test(sum(MIS_effort_adults$you_gift == 1), n = nrow(MIS_effort_adults), p = 0.5)
+```
+
+Adults showed a preference for effort over value for each dependent variable. 
